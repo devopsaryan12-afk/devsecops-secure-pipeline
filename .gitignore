@@ -1,0 +1,56 @@
+# ------------------------
+# Node.js
+# ------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment variables / secrets
+.env
+.env.*
+*.env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs
+*.log
+
+# Coverage & test outputs
+coverage/
+test-results/
+
+# Build outputs
+dist/
+build/
+out/
+
+# IDE & Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docker
+docker-compose.override.yml
+
+# Terraform (future infra)
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Security scanning outputs
+*.sarif
+*.report.json
+
+# Jenkins
+*.jenkinslog
+
+# Misc
+tmp/
+temp/

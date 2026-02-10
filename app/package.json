@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "express": "^5.2.1",
+    "os": "^0.1.2"
+  },
+  "scripts": {
+    "start": "node src/server.js"
+}
+}
