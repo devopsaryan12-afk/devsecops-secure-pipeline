@@ -37,14 +37,14 @@ cd app
 npm install
 npm start
 
-### Application runs on
+#### Application runs on
 http://localhost:8000
 
-### Commands to build and run docker image
+#### Commands to build and run docker image
 docker build -t devsecops-node-app -f docker/Dockerfile .
 docker run -p 8000:8000 devsecops-node-app
 
-### Expected output
+#### Expected output
 {
     "message": "DevSecOps Pipeline Running",
     "hostname": "LAPTOP-HFD3BCDR",
