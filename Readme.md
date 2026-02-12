@@ -44,7 +44,7 @@ http://localhost:8000
 docker build -t devsecops-node-app -f docker/Dockerfile .
 docker run -p 8000:8000 devsecops-node-app
 
-#### Expected output
+#### Example Expected output
 {
     "message": "DevSecOps Pipeline Running",
     "hostname": "LAPTOP-HFD3BCDR",
