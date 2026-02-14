@@ -50,8 +50,9 @@ docker run -p 8000:8000 devsecops-node-app
     "hostname": "LAPTOP-HFD3BCDR",
     "timestamp": "2026-02-11T17:15:42.335Z"
 }
+```
 
-# DevSecOps Secure Pipeline – Phase 2 Update
+## DevSecOps Secure Pipeline – Phase 2 Update
 
 ## Overview
 
