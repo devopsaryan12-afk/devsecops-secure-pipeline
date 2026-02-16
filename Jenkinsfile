@@ -1,14 +1,8 @@
 pipeline {
 
-    agent { label 'worker' }
+    agent { label 'worker-node' }
 
     stages {
-
-        stage('Clean Workspace') {
-            steps {
-                deleteDir()
-            }
-        }
 
         stage('Checkout') {
             steps {
@@ -16,15 +10,17 @@ pipeline {
             }
         }
 
-        stage('Install & Dependency Scan') {
-            agent {
-                docker {
-                    image 'node:18'
-                }
-            }
+        stage('Install Dependencies') {
             steps {
                 dir('app') {
                     sh 'npm ci'
+                }
+            }
+        }
+
+        stage('Node Vulnerability Scan') {
+            steps {
+                dir('app') {
                     sh 'npm audit --audit-level=high'
                 }
             }
@@ -36,7 +32,7 @@ pipeline {
             }
         }
 
-        stage('Image Scan') {
+        stage('Image Scan (Trivy)') {
             steps {
                 sh '''
                 docker run --rm \
