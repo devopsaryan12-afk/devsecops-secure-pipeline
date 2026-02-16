@@ -1,30 +1,30 @@
 pipeline {
-    agent any
+
+    agent { label 'worker-node' }
 
     stages {
-        stage('Cleaning Workspace') {
+
+        stage('Clean Workspace') {
             steps {
                 deleteDir()
             }
         }
-    
+
         stage('Checkout') {
             steps {
-                sh 'git clone https://github.com/devopsaryan12-afk/devsecops-secure-pipeline.git/'
+                checkout scm
             }
         }
 
-        stage('Install Dependencies') {
-            steps {
-                dir('devsecops-secure-pipeline/app') {
-                    sh 'npm ci'
+        stage('Install & Dependency Scan') {
+            agent {
+                docker {
+                    image 'node:18'
                 }
             }
-        }
-
-        stage('Dependency Scan') {
             steps {
-                dir('devsecops-secure-pipeline/app') {
+                dir('app') {
+                    sh 'npm ci'
                     sh 'npm audit --audit-level=high'
                 }
             }
@@ -32,15 +32,17 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                dir('devsecops-secure-pipeline') {
-                    sh 'docker build -t devsecops-node-app .'
-                }
+                sh 'docker build -t devsecops-node-app .'
             }
         }
 
         stage('Image Scan') {
             steps {
-                sh 'trivy image devsecops-node-app'
+                sh '''
+                docker run --rm \
+                -v /var/run/docker.sock:/var/run/docker.sock \
+                aquasec/trivy image devsecops-node-app
+                '''
             }
         }
     }
