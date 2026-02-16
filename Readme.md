@@ -111,178 +111,160 @@ In Phase 2, the pipeline is executed **locally inside the Jenkins container**, w
 - Workspace cleanup ensures a fresh environment for every pipeline run.  
 - Phase 3 will introduce Jenkins agents for improved isolation and scalability.
 
-# 🚀 Phase 3 – Cloud-Based Distributed CI/CD Architecture
+Phase 3 focuses on:
 
-## 📌 Overview
+- Jenkins Master–Worker architecture
+- Secure pipeline execution on worker node
+- Dependency vulnerability scanning
+- Docker image build process
+- Container image vulnerability scanning
+- EC2 automation using User Data scripts
 
-Phase 3 upgrades the local Jenkins pipeline (Phase 2) into a cloud-hosted, distributed CI/CD system.
+------------------------------------------------------------
 
-This phase introduces:
+# Phase 3 Objectives
 
-- Cloud infrastructure
-- Jenkins Master–Agent separation
-- Docker-based build execution
-- Remote agent configuration
-- Production-like CI architecture
+1. Configure Jenkins Master on EC2
+2. Attach Jenkins Worker Node via SSH
+3. Execute pipeline on worker node
+4. Perform Node.js dependency scan
+5. Build Docker image
+6. Scan Docker image for vulnerabilities
+7. Automate infrastructure setup using EC2 User Data
 
-Cloud Provider: Amazon Web Services (AWS)  
-Compute Service: Amazon EC2  
+------------------------------------------------------------
 
----
+# Architecture (Phase 3)
 
-# 🏗 Architecture
+GitHub Repository  
+        ↓  
+Jenkins Master (EC2)  
+        ↓ SSH Connection  
+Jenkins Worker (EC2)  
+        ↓  
+Pipeline Execution on Worker  
 
-## 🔹 Infrastructure Layout
+All build and security stages run on the worker node.
 
-EC2 Instance #1 (Jenkins Master)
-    └── Jenkins Controller
-        └── Orchestrates pipelines only
+------------------------------------------------------------
 
-EC2 Instance #2 (Build Agent Host)
-    ├── Docker installed
-    └── Jenkins Agent (Docker container)
-            └── Builds Docker image
-            └── Runs security scans
-            └── Pushes image to registry
-            └── Deploys container
+# Project Structure (Phase 3)
 
----
+.
+├── app/
+│   ├── package.json
+│   ├── package-lock.json
+│   └── server.js
+├── Dockerfile
+├── Jenkinsfile
+└── README.md
 
-# 🎯 Objectives
+------------------------------------------------------------
 
-- Move CI/CD system from local machine to cloud
-- Implement proper Master–Agent architecture
-- Prevent builds from running on the controller
-- Use containerized build environments
-- Simulate production-grade infrastructure
+# CI/CD Pipeline Stages — Phase 3
 
----
+Stage 1 — Checkout  
+Clones source code from GitHub.
 
-# 🧱 Components
+Stage 2 — Install Dependencies  
+npm ci
 
-## 1️⃣ Jenkins Master (EC2 #1)
+Stage 3 — Dependency Vulnerability Scan  
+npm audit --audit-level=high
+
+Stage 4 — Build Docker Image  
+docker build -t devsecops-node-app .
+
+Stage 5 — Docker Image Scan  
+Trivy container image scan for high and critical vulnerabilities.
+
+------------------------------------------------------------
+
+# Jenkins Setup — Phase 3
+
+## Jenkins Master (EC2)
 
 Responsibilities:
-- Manage pipelines
-- Store build history
-- Assign jobs to agents
-- Provide UI access
+- Pipeline orchestration
+- GitHub integration
+- Agent management
 
-Design Principle:
-- Lightweight
-- No heavy build tasks
-- No unnecessary tools installed
+Installed:
+- Java 17
+- Jenkins
 
----
+------------------------------------------------------------
 
-## 2️⃣ Jenkins Agent (EC2 #2)
+## Jenkins Worker Node (EC2)
 
 Responsibilities:
 - Execute all pipeline stages
+- Run Node.js commands
 - Build Docker images
 - Perform vulnerability scans
-- Push images to registry
-- Deploy containers
 
-Requirements:
-- Docker installed
-- Connected to Master via SSH or inbound agent
-- Proper security group configuration
+Installed:
+- Java 17
+- Docker
+- Node.js 18
 
----
+------------------------------------------------------------
 
-# 🔐 Networking & Security
+# EC2 User Data Script — Jenkins Master (Phase 3)
 
-Master EC2:
-- Port 22 → SSH
-- Port 8080 → Jenkins UI
-- Restricted inbound access
+#!/bin/bash
+yum update -y
 
-Agent EC2:
-- Port 22 → SSH from Master
-- No public exposure required for builds
+yum install -y java-17-amazon-corretto
 
-Best Practices:
-- Use SSH key authentication
-- Avoid hardcoded credentials
-- Use IAM roles when possible
+wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
 
----
+yum install -y jenkins
 
-# 🐳 CI/CD Pipeline Flow
+systemctl enable jenkins
+systemctl start jenkins
 
-1. Developer pushes code to repository
-2. Jenkins Master triggers pipeline
-3. Job assigned to remote Agent
-4. Agent executes:
-   - Checkout source code
-   - Install dependencies
-   - Dependency vulnerability scan
-   - Docker image build
-   - Image vulnerability scan
-   - Push to registry
-   - Deploy container
-5. Build logs stored on Master
+------------------------------------------------------------
 
----
+# EC2 User Data Script — Jenkins Worker (Phase 3)
 
-# 🔄 Pipeline Stages
+#!/bin/bash
+yum update -y
 
-Stage 1  → Checkout Code  
-Stage 2  → Install Dependencies  
-Stage 3  → Dependency Scan  
-Stage 4  → Docker Build  
-Stage 5  → Image Scan  
-Stage 6  → Push to Registry  
-Stage 7  → Deploy Container  
+yum install -y java-17-amazon-corretto
 
-All execution happens on the remote Agent, not on the Master.
+yum install -y docker
+systemctl enable docker
+systemctl start docker
 
----
+usermod -aG docker ec2-user
 
-# 📊 Improvements Over Phase 2
+curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
+yum install -y nodejs
 
-| Feature | Phase 2 | Phase 3 |
-|----------|----------|----------|
-| Hosting | Local machine | Cloud EC2 |
-| Master runs builds | Yes | No |
-| Distributed architecture | No | Yes |
-| Cloud networking | No | Yes |
-| Production-like design | Limited | Yes |
-| Scalability | Limited | Expandable |
+------------------------------------------------------------
 
----
+# Security Implementation in Phase 3
 
-# 🚀 Implementation Plan
+- Node dependency scanning using npm audit
+- Container image scanning using Trivy
+- Master–Worker isolation
+- SSH secured agent communication
+- No direct builds on Jenkins master
 
-1. Launch two EC2 instances
-2. Configure security groups
-3. Install Docker on both
-4. Deploy Jenkins on Master EC2
-5. Configure Agent on second EC2
-6. Connect Agent to Master
-7. Update Jenkinsfile to use agent label
-8. Execute full pipeline
-9. Validate build and deployment
+------------------------------------------------------------
 
----
+# Outcome of Phase 3
 
-# ✅ Completion Criteria
+- Secure CI pipeline operational
+- Worker node successfully attached
+- Automated infrastructure provisioning
+- Integrated DevSecOps practices into build lifecycle
 
-- Jenkins accessible via EC2 public IP
-- Agent visible and online in Jenkins
-- Builds executed on Agent (not Master)
-- Docker image built successfully
-- Security scan completed
-- Application deployed from cloud instance
+------------------------------------------------------------
 
----
-
-# 🔮 Future Enhancements
-
-- Infrastructure as Code (Terraform)
-- Auto-scaling build agents
-- Container orchestration (Kubernetes)
-- High-availability Jenkins setup
-- Artifact registry integration
+Author  
+Aryan Gupta  
+DevOps | Cloud | DevSecOps
 """
