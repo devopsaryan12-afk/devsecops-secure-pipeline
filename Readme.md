@@ -263,8 +263,170 @@ yum install -y nodejs
 - Integrated DevSecOps practices into build lifecycle
 
 ------------------------------------------------------------
+# DevSecOps Secure Pipeline — Phase 4 (Planning Document)
 
+## Objective
+
+Phase 4 focuses on implementing Continuous Deployment (CD) by introducing a separate Production EC2 instance.
+The goal is to extend the CI pipeline from Phase 3 into a secure, automated deployment workflow.
+
+This document outlines the technical plan before implementation.
+
+---
+
+# Phase 4 Goals
+
+- Integrate Docker Hub as a container registry
+- Push scanned images to Docker Hub
+- Deploy application to a separate Production EC2 instance
+- Automate deployment using Jenkins
+- Maintain environment isolation (CI vs Production)
+- Follow secure credential management practices
+
+---
+
+# Target Architecture
+
+GitHub  
+↓  
+Jenkins Master (EC2)  
+↓  
+Jenkins Worker (Build + Scan)  
+↓  
+Docker Hub (Image Registry)  
+↓  
+Production EC2 (Deployment Server)
+
+---
+
+# Infrastructure Plan
+
+## 1. Production EC2 Instance
+
+Purpose:
+- Host running application container
+- Act as production environment
+
+Configuration:
+- Amazon Linux 2
+- Docker installed
+- Port 22 (SSH access restricted to Jenkins Worker)
+- Port 80 (or 3000) open for application access
+
+User Data Script Plan:
+
+#!/bin/bash
+yum update -y
+yum install -y docker
+systemctl enable docker
+systemctl start docker
+usermod -aG docker ec2-user
+
+---
+
+# Jenkins Configuration Plan
+
+## 1. Docker Hub Credentials
+
+- Store credentials in Jenkins Credentials Manager
+- Type: Username & Password
+- ID: dockerhub-creds
+
+## 2. Production SSH Key
+
+- Store private key securely in Jenkins
+- Type: SSH Username with Private Key
+- ID: prod-ec2-key
+- Username: ec2-user
+
+No credentials will be hardcoded in the Jenkinsfile.
+
+---
+
+# Pipeline Extension Plan
+
+New stages to be added after successful security scans:
+
+## Stage 1 — Push Image to Docker Hub
+
+Steps:
+- Login using Jenkins credentials
+- Tag image using BUILD_NUMBER
+- Push image to Docker Hub
+- Logout
+
+Image tagging strategy:
+devsecops-node-app:${BUILD_NUMBER}
+
+This ensures:
+- Version tracking
+- Traceability
+- Rollback capability
+
+---
+
+## Stage 2 — Deploy to Production EC2
+
+Steps:
+- SSH into production server using Jenkins ssh-agent
+- Stop existing container (if running)
+- Remove old container
+- Pull latest versioned image
+- Run new container with port mapping
+
+Deployment strategy:
+Recreate deployment (simple and clean for Phase 4)
+
+---
+
+# Security Considerations
+
+- Build and scan happen only on Worker node
+- Production server does not contain source code
+- Image is scanned before push
+- No plaintext credentials
+- SSH key-based authentication only
+- CI and Production environments are isolated
+
+---
+
+# Rollback Strategy (Planned)
+
+Because images are versioned using BUILD_NUMBER:
+
+To rollback:
+- SSH into production server
+- Run previous image tag manually
+
+Future improvement:
+Automate rollback stage in Jenkins (Phase 5 enhancement)
+
+---
+
+# Expected Outcome of Phase 4
+
+After implementation:
+
+- Fully automated CI/CD pipeline
+- Secure image registry integration
+- Separate production environment
+- Deployment triggered automatically after successful build
+- Version-controlled Docker releases
+
+---
+
+# Future Enhancements (Beyond Phase 4)
+
+- Blue/Green deployment strategy
+- Docker Compose in production
+- Nginx reverse proxy
+- HTTPS with Let's Encrypt
+- Kubernetes migration
+- Automated rollback stage
+
+---
 Author  
 Aryan Gupta  
 DevOps | Cloud | DevSecOps
 """
+
