@@ -263,7 +263,7 @@ yum install -y nodejs
 - Integrated DevSecOps practices into build lifecycle
 
 ------------------------------------------------------------
-# DevSecOps Secure Pipeline — Phase 4 (Planning Document)
+# DevSecOps Secure Pipeline — Phase 4
 
 ## Objective
 
