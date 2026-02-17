@@ -211,7 +211,7 @@ Installed:
 ------------------------------------------------------------
 
 # EC2 User Data Script — Jenkins Master (Phase 3)
-
+```bash
 #!/bin/bash
 yum update -y
 
@@ -224,11 +224,11 @@ yum install -y jenkins
 
 systemctl enable jenkins
 systemctl start jenkins
-
+```
 ------------------------------------------------------------
 
 # EC2 User Data Script — Jenkins Worker (Phase 3)
-
+```bash
 #!/bin/bash
 yum update -y
 
@@ -242,7 +242,7 @@ usermod -aG docker ec2-user
 
 curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
 yum install -y nodejs
-
+```
 ------------------------------------------------------------
 
 # Security Implementation in Phase 3
@@ -269,8 +269,6 @@ yum install -y nodejs
 
 Phase 4 focuses on implementing Continuous Deployment (CD) by introducing a separate Production EC2 instance.
 The goal is to extend the CI pipeline from Phase 3 into a secure, automated deployment workflow.
-
-This document outlines the technical plan before implementation.
 
 ---
 
@@ -313,6 +311,7 @@ Configuration:
 - Port 22 (SSH access restricted to Jenkins Worker)
 - Port 80 (or 3000) open for application access
 
+```bash
 User Data Script Plan:
 
 #!/bin/bash
@@ -321,7 +320,7 @@ yum install -y docker
 systemctl enable docker
 systemctl start docker
 usermod -aG docker ec2-user
-
+```
 ---
 
 # Jenkins Configuration Plan
@@ -428,5 +427,5 @@ After implementation:
 Author  
 Aryan Gupta  
 DevOps | Cloud | DevSecOps
-"""
+Enhanced By ChatGPT
 
