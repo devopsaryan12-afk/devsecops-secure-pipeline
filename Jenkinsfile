@@ -90,7 +90,7 @@ pipeline {
                             docker rm $CONTAINER_NAME || true &&
                             docker run -d \
                                 --name $CONTAINER_NAME \
-                                -p 80:3000 \
+                                -p 80:8000 \
                                 --restart always \
                                 $DOCKER_IMAGE:$IMAGE_TAG
                         '
