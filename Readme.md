@@ -311,15 +311,36 @@ Configuration:
 - Port 22 (SSH access restricted to Jenkins Worker)
 - Port 80 (or 3000) open for application access
 
-```bash
 User Data Script Plan:
+```bash
 
 #!/bin/bash
+
+# Update system
 yum update -y
+
+# Install Docker
 yum install -y docker
+
+# Enable and start Docker
 systemctl enable docker
 systemctl start docker
+
+# Add ec2-user to docker group
 usermod -aG docker ec2-user
+
+# Install useful utilities (optional but recommended)
+yum install -y git curl
+
+# Create app directory
+mkdir -p /opt/app
+chown ec2-user:ec2-user /opt/app
+
+# Enable docker to start on reboot
+systemctl enable docker
+
+# Log completion
+echo "Production server setup complete" > /var/log/user-data.log
 ```
 ---
 
