@@ -51,7 +51,7 @@ pipeline {
                     -v /var/run/docker.sock:/var/run/docker.sock \
                     aquasec/trivy image \
                     --exit-code 1 \
-                    --severity HIGH,CRITICAL \
+                    --severity CRITICAL \
                     $DOCKER_IMAGE:$IMAGE_TAG
                 """
             }

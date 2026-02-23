@@ -216,6 +216,7 @@ Installed:
 yum update -y
 
 yum install -y java-17-amazon-corretto
+yum install -y git
 
 wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
 rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
