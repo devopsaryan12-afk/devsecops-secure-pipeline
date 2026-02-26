@@ -3,12 +3,13 @@ pipeline {
     agent { label 'worker-node' }
 
     environment {
-        DOCKER_IMAGE      = "aryandevops77/devsecops-node-app"
-        IMAGE_TAG         = "${BUILD_NUMBER}"
+        DOCKER_IMAGE       = "aryandevops77/devsecops-node-app"
+        IMAGE_TAG          = "${BUILD_NUMBER}"
         DOCKER_CREDENTIALS = "dockerhub-creds-id"
         EC2_CREDENTIALS    = "ec2-ssh-creds-id"
         EC2_HOST           = "ec2-user@13.233.74.179"
         CONTAINER_NAME     = "devsecops-app"
+        AWS_DEFAULT_REGION = "ap-south-1"
     }
 
     stages {
@@ -16,6 +17,30 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
+            }
+        }
+
+        stage('Terraform Init') {
+            steps {
+                dir('terraform') {
+                    sh 'terraform init'
+                }
+            }
+        }
+
+        stage('Terraform Validate') {
+            steps {
+                dir('terraform') {
+                    sh 'terraform validate'
+                }
+            }
+        }
+
+        stage('Terraform Plan') {
+            steps {
+                dir('terraform') {
+                    sh 'terraform plan'
+                }
             }
         }
 
@@ -106,11 +131,11 @@ pipeline {
         }
 
         success {
-            echo "Phase 4 CI/CD pipeline executed successfully."
+            echo "Phase 5 pipeline executed successfully."
         }
 
         failure {
-            echo "Pipeline failed. Fix vulnerabilities or deployment errors."
+            echo "Pipeline failed. Fix Terraform, vulnerabilities, or deployment errors."
         }
     }
 }

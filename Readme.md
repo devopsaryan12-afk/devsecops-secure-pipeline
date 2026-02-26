@@ -445,6 +445,182 @@ After implementation:
 - Kubernetes migration
 - Automated rollback stage
 
+
+# Phase 5 – Infrastructure Foundation with Terraform
+
+## 📌 Objective
+
+In this phase, we introduce Infrastructure as Code using **Terraform**.
+
+The goal is to build a production-style AWS networking foundation that will support Kubernetes in the next phase.
+
+> ⚠️ No application workloads are deployed in this phase.  
+> This phase focuses strictly on cloud infrastructure fundamentals.
+
+---
+
+## 🎯 What We Are Building
+
+Using Terraform, we provision:
+
+- Custom VPC
+- 2 Public Subnets (across 2 Availability Zones)
+- 2 Private Subnets (across 2 Availability Zones)
+- Internet Gateway
+- NAT Gateway (single, cost-optimized)
+- Route Tables and associations
+- Base Security Group
+
+This infrastructure will later support Amazon EKS in Phase 6.
+
+---
+
+## 🏗 Architecture Overview
+
+```
+VPC (10.0.0.0/16)
+│
+├── Public Subnet (AZ1)
+├── Public Subnet (AZ2)
+│
+├── Private Subnet (AZ1)
+└── Private Subnet (AZ2)
+```
+
+### Public Subnets
+- Internet Gateway attached
+- NAT Gateway deployed here
+- Used for public-facing resources
+
+### Private Subnets
+- Outbound internet access via NAT Gateway
+- Future EKS worker nodes will run here
+
+---
+
+## 📂 Project Structure
+
+```
+project-root/
+│
+├── app/
+├── docker/
+├── terraform/
+│   ├── providers.tf
+│   ├── main.tf
+│   ├── variables.tf
+│   ├── outputs.tf
+│   └── terraform.tfvars
+│
+└── Jenkinsfile
+```
+
+All infrastructure code resides inside the `terraform/` directory.
+
+---
+
+## 🔄 CI Integration Strategy
+
+Terraform is integrated into the existing Jenkins pipeline.
+
+### Updated Pipeline Flow
+
+1. Checkout Code  
+2. Terraform Init  
+3. Terraform Plan  
+4. Docker Build  
+5. Security Scan  
+
+> ⚠️ `terraform apply` is NOT automated in this phase.  
+> Infrastructure changes must be applied manually to avoid accidental resource creation.
+
+---
+
+## 🔐 AWS Authentication Strategy
+
+Terraform runs on the Jenkins Worker EC2 instance.
+
+Authentication method:
+
+- IAM Role attached to Jenkins Worker EC2
+- No hardcoded AWS access keys
+- No credentials stored in repository
+
+This follows secure infrastructure practices.
+
+---
+
+## 🚀 Execution Commands (Manual Apply)
+
+SSH into Jenkins Worker:
+
+```bash
+cd terraform
+terraform init
+terraform plan
+terraform apply
+```
+
+To destroy infrastructure:
+
+```bash
+terraform destroy
+```
+
+---
+
+## 🧠 Why This Phase Matters
+
+This phase establishes:
+
+- AWS networking fundamentals
+- Public vs Private subnet separation
+- NAT routing logic
+- Infrastructure lifecycle management
+- Terraform state handling
+- CI integration for infrastructure validation
+
+Skipping this layer often leads to shallow Kubernetes understanding.
+
+---
+
+## 📌 Important Rules
+
+- Default VPC is NOT used
+- No manual changes via AWS Console
+- Infrastructure must be reproducible
+- All networking resources are defined in code
+
+---
+
+## 🔮 What Happens in Phase 6
+
+In the next phase, we will:
+
+- Provision an EKS cluster using Terraform
+- Create worker node groups
+- Deploy the application into Kubernetes
+- Expose the application via LoadBalancer
+
+That is where workload orchestration begins.
+
+---
+
+## ✅ Learning Outcomes
+
+After completing this phase, you will understand:
+
+- VPC architecture design
+- Availability Zone distribution
+- Subnet routing behavior
+- NAT Gateway setup
+- Infrastructure validation in CI pipelines
+- Terraform execution lifecycle
+
+---
+
+**Phase 5 builds the foundation.  
+Phase 6 builds the platform.**
 ---
 Author  
 Aryan Gupta  
