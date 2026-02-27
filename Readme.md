@@ -233,7 +233,7 @@ systemctl start jenkins
 #!/bin/bash
 yum update -y
 
-yum install -y java-17-amazon-corretto
+yum install -y java-21-amazon-corretto
 
 yum install -y docker
 systemctl enable docker
@@ -243,6 +243,9 @@ usermod -aG docker ec2-user
 
 curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
 yum install -y nodejs
+sudo yum install -y yum-utils
+sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+sudo yum install -y terraform
 ```
 ------------------------------------------------------------
 
