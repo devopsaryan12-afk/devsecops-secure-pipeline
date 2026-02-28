@@ -1,3 +1,3 @@
 output "production" {
-  value = aws_instance.web.public_ip
+  value = aws_instance.production.public_ip
 }
