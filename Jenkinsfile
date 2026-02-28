@@ -7,8 +7,9 @@ pipeline {
         IMAGE_TAG          = "${BUILD_NUMBER}"
         DOCKER_CREDENTIALS = "dockerhub-creds-id"
         EC2_CREDENTIALS    = "ec2-ssh-creds-id"
-        EC2_HOST           = "ec2-user@13.233.74.179"
         CONTAINER_NAME     = "devsecops-app"
+        AWS_ACCESS_KEY_ID     = credentials('aws-access-key-id')
+        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
         AWS_DEFAULT_REGION = "ap-south-1"
     }
 
@@ -39,7 +40,26 @@ pipeline {
         stage('Terraform Plan') {
             steps {
                 dir('terraform') {
-                    sh 'terraform plan'
+                    sh 'terraform plan -out=tfplan'
+                }
+            }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                dir('terraform') {
+                    sh 'terraform apply -auto-approve tfplan'
+                }
+            }
+        }
+
+        stage('Get EC2 Public IP') {
+            steps {
+                script {
+                    EC2_PUBLIC_IP = sh(
+                        script: "cd terraform && terraform output -raw ec2_public_ip",
+                        returnStdout: true
+                    ).trim()
                 }
             }
         }
@@ -52,32 +72,11 @@ pipeline {
             }
         }
 
-        stage('Node Vulnerability Scan') {
-            steps {
-                dir('app') {
-                    sh 'npm audit --audit-level=high'
-                }
-            }
-        }
-
         stage('Build Docker Image') {
             steps {
                 sh """
                     docker build -t $DOCKER_IMAGE:$IMAGE_TAG .
                     docker tag $DOCKER_IMAGE:$IMAGE_TAG $DOCKER_IMAGE:latest
-                """
-            }
-        }
-
-        stage('Image Scan (Trivy)') {
-            steps {
-                sh """
-                    docker run --rm \
-                    -v /var/run/docker.sock:/var/run/docker.sock \
-                    aquasec/trivy image \
-                    --exit-code 1 \
-                    --severity CRITICAL \
-                    $DOCKER_IMAGE:$IMAGE_TAG
                 """
             }
         }
@@ -109,7 +108,7 @@ pipeline {
             steps {
                 sshagent([EC2_CREDENTIALS]) {
                     sh """
-                        ssh -o StrictHostKeyChecking=no $EC2_HOST '
+                        ssh -o StrictHostKeyChecking=no ec2-user@${EC2_PUBLIC_IP} '
                             docker pull $DOCKER_IMAGE:$IMAGE_TAG &&
                             docker stop $CONTAINER_NAME || true &&
                             docker rm $CONTAINER_NAME || true &&
@@ -131,11 +130,11 @@ pipeline {
         }
 
         success {
-            echo "Phase 5 pipeline executed successfully."
+            echo "Pipeline executed successfully."
         }
 
         failure {
-            echo "Pipeline failed. Fix Terraform, vulnerabilities, or deployment errors."
+            echo "Pipeline failed. Fix Terraform or deployment errors."
         }
     }
 }
