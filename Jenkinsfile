@@ -57,7 +57,7 @@ pipeline {
             steps {
                 script {
                     EC2_PUBLIC_IP = sh(
-                        script: "cd terraform && terraform output -raw ec2_public_ip",
+                        script: "cd terraform && terraform output -raw production",
                         returnStdout: true
                     ).trim()
                 }
