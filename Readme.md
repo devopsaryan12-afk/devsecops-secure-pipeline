@@ -596,19 +596,6 @@ Skipping this layer often leads to shallow Kubernetes understanding.
 
 ---
 
-## 🔮 What Happens in Phase 6
-
-In the next phase, we will:
-
-- Provision an EKS cluster using Terraform
-- Create worker node groups
-- Deploy the application into Kubernetes
-- Expose the application via LoadBalancer
-
-That is where workload orchestration begins.
-
----
-
 ## ✅ Learning Outcomes
 
 After completing this phase, you will understand:
@@ -622,8 +609,187 @@ After completing this phase, you will understand:
 
 ---
 
-**Phase 5 builds the foundation.  
-Phase 6 builds the platform.**
+# 🚀 Phase 6 — Secure IAM Role Integration & Automated Deployment
+
+## 📌 Overview
+
+In Phase 6, we upgraded the DevSecOps pipeline by removing static AWS credentials and implementing IAM Role-based authentication for Terraform.
+
+This phase improves security and aligns the project with real-world DevOps best practices.
+
+---
+
+# 🏗 Architecture (After Phase 6)
+
+Developer → GitHub → Jenkins (EC2 with IAM Role)  
+                         ↓  
+                    Terraform  
+                         ↓  
+                 AWS Infrastructure  
+                         ↓  
+             Dockerized App Deployment  
+                         ↓  
+                  Production EC2  
+
+---
+
+# 🔐 What Changed from Phase 5?
+
+## ❌ Removed
+- Hardcoded AWS access keys in Jenkins
+- `withCredentials` block for AWS authentication
+
+## ✅ Added
+- IAM Role attached to Jenkins EC2
+- Automatic authentication using EC2 Instance Metadata (IMDS)
+- Secure Terraform execution without static secrets
+
+---
+
+# 🔑 IAM Role Configuration
+
+- Trusted Entity: **EC2**
+- Policy Attached: `AmazonEC2FullAccess` (for learning/demo)
+- Role Name: `jenkins-terraform-role`
+- Attached To: Jenkins Worker EC2 instance
+
+---
+
+# 🔎 How Authentication Works Now
+
+Terraform uses:
+
+EC2 → Instance Metadata Service (IMDS) → Temporary Credentials → AWS APIs
+
+No manual key export required.
+No AWS credentials stored in Jenkins.
+
+---
+
+# 🌍 Terraform Infrastructure
+
+Terraform provisions:
+
+- VPC
+- Public Subnet
+- Internet Gateway
+- Route Table & Association
+- Security Group (Ports 22 & 80)
+- EC2 Instance (Production)
+- Docker installation via user_data
+
+---
+
+# 🖥 EC2 User Data Script
+
+```bash
+#!/bin/bash
+yum update -y
+yum install -y docker git curl
+systemctl enable docker
+systemctl start docker
+usermod -aG docker ec2-user
+echo "Production server setup complete" > /var/log/user-data.log
+```
+
+---
+
+# 📤 Terraform Output
+
+```hcl
+output "ec2_public_ip" {
+  value = aws_instance.production.public_ip
+}
+```
+
+Used in Jenkins:
+
+```bash
+terraform output -raw production
+```
+
+---
+
+# 🤖 Jenkins Pipeline Flow (Phase 6)
+
+1. Checkout Code
+2. Build Docker Image
+3. Push Image to DockerHub
+4. Terraform Init
+5. Terraform Apply
+6. Fetch EC2 Public IP
+7. SSH into EC2 (SSH Agent Plugin)
+8. Pull Latest Image
+9. Run Docker Container
+
+---
+
+# 🔌 Required Jenkins Plugins
+
+- Git Plugin
+- Docker Pipeline Plugin
+- SSH Agent Plugin
+- Pipeline Plugin
+- Credentials Binding Plugin
+
+---
+
+# 🔐 Security Improvements
+
+| Feature | Phase 5 | Phase 6 |
+|----------|----------|----------|
+| AWS Access Keys | Stored in Jenkins | ❌ Removed |
+| IAM Role | ❌ No | ✅ Yes |
+| Temporary Credentials | ❌ No | ✅ Yes |
+| Secret Exposure Risk | Medium | Low |
+| Production Alignment | Partial | Strong |
+
+---
+
+# 🧠 DevOps Concepts Demonstrated
+
+- IAM Roles vs Static Credentials
+- EC2 Instance Metadata Service (IMDS)
+- Terraform Outputs & State
+- Secure CI/CD Integration
+- Docker-based Deployment
+- SSH Agent Usage in Jenkins
+
+---
+
+# 📁 Repository Structure
+
+```
+devsecops-secure-pipeline/
+│
+├── app/
+├── Dockerfile
+├── Jenkinsfile
+├── terraform/
+│   ├── main.tf
+│   ├── providers.tf
+│   ├── variables.tf
+│   ├── outputs.tf
+│   └── terraform.tfvars
+└── README.md
+```
+
+---
+
+# 🚧 Next Phase (Phase 7)
+
+- Configure S3 backend for Terraform state
+- Enable DynamoDB state locking
+- Prevent state corruption in multi-user environments
+- Move toward enterprise-grade infrastructure management
+
+---
+
+# 🎯 Conclusion
+
+Phase 6 upgrades the project to a security-focused DevOps architecture by eliminating static AWS credentials and implementing IAM Role-based authentication.
+
+The pipeline now reflects production-style infrastructure provisioning and deployment practices.
 ---
 Author  
 Aryan Gupta  
