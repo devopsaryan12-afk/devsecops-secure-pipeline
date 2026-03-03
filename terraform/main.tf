@@ -1,76 +1,33 @@
-resource "aws_vpc" "practice_vpc" {
-  cidr_block = "10.0.0.0/16"
-}
+resource "aws_eks_cluster" "eks" {
+  name     = var.cluster_name
+  role_arn = aws_iam_role.eks_cluster_role.arn
 
-resource "aws_subnet" "practice_subnet" {
-  vpc_id     = aws_vpc.practice_vpc.id
-  cidr_block = "10.0.1.0/24"
-  availability_zone = "ap-south-1a"
-  map_public_ip_on_launch = true
-}
-
-resource "aws_internet_gateway" "igw" {
-  vpc_id = aws_vpc.practice_vpc.id
-}
-
-resource "aws_route_table" "public" {
-  vpc_id = aws_vpc.practice_vpc.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.igw.id
-  }
-}
-
-resource "aws_route_table_association" "public_assoc" {
-  subnet_id      = aws_subnet.practice_subnet.id
-  route_table_id = aws_route_table.public.id
-}
-
-resource "aws_security_group" "web" {
-  vpc_id = aws_vpc.practice_vpc.id
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+  vpc_config {
+    subnet_ids = var.subnet_ids
   }
 
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  depends_on = [
+    aws_iam_role_policy_attachment.eks_cluster_policy
+  ]
 }
 
-resource "aws_instance" "production"{
-  ami = "ami-051a31ab2f4d498f5"
-  instance_type = "t2.micro"
-  subnet_id     = aws_subnet.practice_subnet.id
-  vpc_security_group_ids      = [aws_security_group.web.id]
-  associate_public_ip_address = true
-  user_data = <<-EOF
-              #!/bin/bash
-              yum update -y
-              yum install -y docker
-              
-              usermod -aG docker ec2-user
+resource "aws_eks_node_group" "node_group" {
+  cluster_name    = aws_eks_cluster.eks.name
+  node_group_name = "devsecops-node-group"
+  node_role_arn   = aws_iam_role.eks_node_role.arn
+  subnet_ids      = var.subnet_ids
 
-              yum install -y git curl
+  scaling_config {
+    desired_size = 2
+    max_size     = 3
+    min_size     = 1
+  }
 
-              mkdir -p /opt/app
-              chown ec2-user:ec2-user /opt/app
-              systemctl enable docker
-              systemctl start docker
-              echo "Production server setup complete" > /var/log/user-data.log
-              EOF
+  instance_types = ["t3.medium"]
+
+  depends_on = [
+    aws_iam_role_policy_attachment.worker_node_policy,
+    aws_iam_role_policy_attachment.cni_policy,
+    aws_iam_role_policy_attachment.ecr_policy
+  ]
 }
