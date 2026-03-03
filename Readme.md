@@ -773,23 +773,203 @@ devsecops-secure-pipeline/
 │   └── terraform.tfvars
 └── README.md
 ```
+# 🚀 Phase 7 — Final Phase: Amazon EKS Integration
+
+## 📌 Overview
+
+Phase 7 marks the final transformation of this project.
+
+We migrated from a traditional EC2-based Docker deployment to a fully managed Kubernetes environment using Amazon EKS.
+
+This completes the journey from:
+
+EC2-based container deployment → Cloud-native Kubernetes orchestration
 
 ---
 
-# 🚧 Next Phase (Phase 7)
+# 🏗 Architecture Evolution
 
-- Configure S3 backend for Terraform state
-- Enable DynamoDB state locking
-- Prevent state corruption in multi-user environments
-- Move toward enterprise-grade infrastructure management
+## 🔹 Before (Phase 6)
+
+Jenkins → Terraform → EC2 → Docker Container
+
+- SSH-based deployment
+- Single-node architecture
+- Manual container lifecycle management
 
 ---
 
-# 🎯 Conclusion
+## 🔹 After (Phase 7 - Final)
 
-Phase 6 upgrades the project to a security-focused DevOps architecture by eliminating static AWS credentials and implementing IAM Role-based authentication.
+Jenkins → Terraform → EKS Cluster → Kubernetes Deployment → LoadBalancer
 
-The pipeline now reflects production-style infrastructure provisioning and deployment practices.
+- No SSH
+- Managed Kubernetes control plane
+- Self-healing pods
+- Scalable architecture
+- Rolling deployments
+
+---
+
+# 🎯 Objectives of Phase 7
+
+- Provision EKS cluster using Terraform
+- Create managed node group
+- Configure IAM roles for cluster and nodes
+- Deploy application using Kubernetes manifests
+- Automate deployment via Jenkins pipeline
+- Expose application using AWS LoadBalancer
+
+---
+
+# 📁 Updated Project Structure
+
+```
+devsecops-secure-pipeline/
+│
+├── app/
+├── Dockerfile
+├── Jenkinsfile
+│
+├── k8s/
+│   ├── deployment.yaml
+│   └── service.yaml
+│
+└── terraform/
+    ├── providers.tf
+    ├── main.tf
+    ├── iam.tf
+    ├── variables.tf
+    └── outputs.tf
+```
+
+---
+
+# 🔧 Terraform Infrastructure
+
+## Resources Created
+
+- EKS Cluster
+- Managed Node Group
+- IAM Role for Cluster
+- IAM Role for Worker Nodes
+
+## Key Terraform Resources
+
+- aws_eks_cluster
+- aws_eks_node_group
+- aws_iam_role
+- aws_iam_role_policy_attachment
+
+---
+
+# ☸ Kubernetes Deployment
+
+## Deployment
+
+- 2 replicas
+- Docker image pulled from DockerHub
+- Rolling updates enabled by default
+
+## Service
+
+- Type: LoadBalancer
+- Exposes application publicly
+- AWS automatically provisions ELB
+
+---
+
+# 🤖 Jenkins Pipeline Changes
+
+## Removed
+
+- SSH-based deployment
+- EC2 public IP usage
+- docker run on remote VM
+
+## Added
+
+- Dynamic image tagging using BUILD_NUMBER
+- Terraform validation and planning
+- EKS kubeconfig update
+- kubectl apply deployment
+- kubectl rollout status check
+
+---
+
+# 🔄 CI/CD Flow (Final Version)
+
+1. Checkout source code
+2. Build Docker image
+3. Tag image with build number
+4. Push image to DockerHub
+5. Terraform apply (EKS infrastructure)
+6. Update kubeconfig
+7. Deploy manifests using kubectl
+8. Wait for rollout completion
+9. Access app via LoadBalancer URL
+
+---
+
+# 🔐 Security Improvements Over EC2 Deployment
+
+| Feature | EC2 Deployment | EKS Deployment |
+|----------|----------------|----------------|
+| SSH Access | Required | Not Required |
+| Container Orchestration | Manual | Kubernetes |
+| Auto Healing | No | Yes |
+| Scaling | Manual | Native |
+| Rolling Updates | Manual | Built-in |
+
+---
+
+# 📊 DevOps Concepts Demonstrated
+
+- Infrastructure as Code (Terraform)
+- IAM Role-based authentication
+- Docker image versioning
+- Kubernetes Deployments & Services
+- CI/CD automation with Jenkins
+- Managed Kubernetes (EKS)
+- Cloud-native architecture
+
+---
+
+# 🎓 What This Project Now Represents
+
+This project demonstrates:
+
+- End-to-end DevSecOps pipeline
+- Secure infrastructure provisioning
+- Cloud-native deployment strategy
+- Transition from VM-based deployment to Kubernetes orchestration
+
+It reflects production-level DevOps practices.
+
+---
+
+# 🏁 Project Completion
+
+Phase 7 concludes this project.
+
+The system now runs on Amazon EKS with automated CI/CD and scalable Kubernetes-based deployment.
+
+Future projects will explore advanced topics such as:
+- Multi-environment architecture
+- Observability stack
+- Helm-based deployments
+- GitOps workflows
+
+---
+
+# ✅ Final Outcome
+
+A complete DevSecOps pipeline evolving from:
+
+Basic Docker deployment → Secure EC2 infrastructure → Fully managed Kubernetes (EKS)
+
+Project Status: Completed
+Architecture Level: Cloud-Native
 ---
 Author  
 Aryan Gupta  

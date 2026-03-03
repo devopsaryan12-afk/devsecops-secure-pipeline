@@ -1,16 +1,11 @@
 pipeline {
-
-    agent { label 'worker-node' }
+    agent any
 
     environment {
-        DOCKER_IMAGE       = "aryandevops77/devsecops-node-app"
-        IMAGE_TAG          = "${BUILD_NUMBER}"
-        DOCKER_CREDENTIALS = "dockerhub-creds-id"
-        EC2_CREDENTIALS    = "ec2-ssh-creds-id"
-        CONTAINER_NAME     = "devsecops-app"
-        AWS_ACCESS_KEY_ID     = credentials('AWS_ACCESS_KEY_ID')
-        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
         AWS_DEFAULT_REGION = "ap-south-1"
+        CLUSTER_NAME = "devsecops-eks-cluster"
+        IMAGE_NAME = "aryandevops77/devsecops-node-app"
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
     }
 
     stages {
@@ -21,120 +16,62 @@ pipeline {
             }
         }
 
-        stage('Terraform Init') {
-            steps {
-                dir('terraform') {
-                    sh 'terraform init'
-                }
-            }
-        }
-
-        stage('Terraform Validate') {
-            steps {
-                dir('terraform') {
-                    sh 'terraform validate'
-                }
-            }
-        }
-
-        stage('Terraform Plan') {
-            steps {
-                dir('terraform') {
-                    sh 'terraform plan -out=tfplan'
-                }
-            }
-        }
-
-        stage('Terraform Apply') {
-            steps {
-                dir('terraform') {
-                    sh 'terraform apply -auto-approve tfplan'
-                }
-            }
-        }
-
-        stage('Get EC2 Public IP') {
-            steps {
-                script {
-                    EC2_PUBLIC_IP = sh(
-                        script: "cd terraform && terraform output -raw production",
-                        returnStdout: true
-                    ).trim()
-                }
-            }
-        }
-
-        stage('Install Dependencies') {
-            steps {
-                dir('app') {
-                    sh 'npm ci'
-                }
-            }
-        }
-
         stage('Build Docker Image') {
             steps {
-                sh """
-                    docker build -t $DOCKER_IMAGE:$IMAGE_TAG .
-                    docker tag $DOCKER_IMAGE:$IMAGE_TAG $DOCKER_IMAGE:latest
-                """
+                sh "docker build -t $IMAGE_NAME:$IMAGE_TAG ."
             }
         }
 
-        stage('Docker Login') {
+        stage('Push Docker Image') {
             steps {
                 withCredentials([usernamePassword(
-                    credentialsId: DOCKER_CREDENTIALS,
+                    credentialsId: 'dockerhub-credentials',
                     usernameVariable: 'DOCKER_USER',
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
                     sh '''
-                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                    echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                    docker push $IMAGE_NAME:$IMAGE_TAG
                     '''
                 }
             }
         }
 
-        stage('Push Image to Docker Hub') {
+        stage('Terraform Init & Apply (EKS)') {
             steps {
-                sh """
-                    docker push $DOCKER_IMAGE:$IMAGE_TAG
-                    docker push $DOCKER_IMAGE:latest
-                """
-            }
-        }
-
-        stage('Deploy to Production EC2') {
-            steps {
-                sshagent([EC2_CREDENTIALS]) {
-                    sh """
-                        ssh -o StrictHostKeyChecking=no ec2-user@${EC2_PUBLIC_IP} '
-                            docker pull $DOCKER_IMAGE:$IMAGE_TAG &&
-                            docker stop $CONTAINER_NAME || true &&
-                            docker rm $CONTAINER_NAME || true &&
-                            docker run -d \
-                                --name $CONTAINER_NAME \
-                                -p 80:8000 \
-                                --restart always \
-                                $DOCKER_IMAGE:$IMAGE_TAG
-                        '
-                    """
+                dir('terraform') {
+                    sh '''
+                    terraform init
+                    terraform validate
+                    terraform plan
+                    terraform apply -auto-approve
+                    '''
                 }
             }
         }
-    }
 
-    post {
-        always {
-            sh "docker rmi $DOCKER_IMAGE:$IMAGE_TAG || true"
+        stage('Update Kubeconfig') {
+            steps {
+                sh '''
+                aws eks update-kubeconfig \
+                  --region $AWS_DEFAULT_REGION \
+                  --name $CLUSTER_NAME
+                '''
+            }
         }
 
-        success {
-            echo "Pipeline executed successfully."
-        }
+        stage('Deploy to EKS') {
+            steps {
+                sh '''
+                # Update image dynamically
+                sed -i "s|IMAGE_PLACEHOLDER|$IMAGE_NAME:$IMAGE_TAG|g" k8s/deployment.yaml
 
-        failure {
-            echo "Pipeline failed. Fix Terraform or deployment errors."
+                kubectl apply -f k8s/deployment.yaml
+                kubectl apply -f k8s/service.yaml
+
+                kubectl rollout status deployment/devsecops-app
+                '''
+            }
         }
     }
 }

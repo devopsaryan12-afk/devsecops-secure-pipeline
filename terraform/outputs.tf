@@ -1,3 +1,7 @@
-output "production" {
-  value = aws_instance.production.public_ip
+output "cluster_name" {
+  value = aws_eks_cluster.eks.name
+}
+
+output "cluster_endpoint" {
+  value = aws_eks_cluster.eks.endpoint
 }
