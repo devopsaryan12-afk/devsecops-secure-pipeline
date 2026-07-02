@@ -974,5 +974,3 @@ Architecture Level: Cloud-Native
 Author  
 Aryan Gupta  
 DevOps | Cloud | DevSecOps
-Enhanced By ChatGPT
-
